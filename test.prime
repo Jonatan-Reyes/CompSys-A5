@@ -1,0 +1,8 @@
+                                        	#     .file	"81a87c85ecf950230a210580b3b8bc64.c"
+                                        	#     .text
+                                        	#     .globl	main
+                                        	#     .type main, @function
+main:                                   	# main:                                   
+.LFB0:                                  	# .LFB0:                                  
+    subq $8, %rsp                       	#
+    movq %r11, (%rsp)                   	#     .cfi_startproc                      
