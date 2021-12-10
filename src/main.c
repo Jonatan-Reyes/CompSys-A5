@@ -126,6 +126,38 @@ int main(int argc, char* argv[]) {
         // from info above determine the instruction size
         val ins_size = from_int(2); 
 
+        // første fire bits -> bestemmer instruktion, hvoraf man kan udlede størrelsen
+        // bitwise &&
+        // use mayor-up
+        // if (mayor-up == 0000[0]) -> ins_size = from_int(2)
+        // if (mayor-up == 0001[1]) -> ins_size = from_int(2)
+        // if (mayor-up == 0010[2]) -> ins_size = from_int(2)
+        // if (mayor-up == 0011[3]) -> ins_size = from_int(2)
+        // the above structure: 00xx
+        // Hvis vi må bruge bitwise operationer på mayor-up kan vi bruge følgene:
+        // Mayor-up >> 2 then Mayor-up << 2 then not Mayor up
+        // Ellers kan vi bruge not(major up & 1100)
+
+        // if (mayor-up == 1000[8]) -> ins_size = from_int(2)
+        
+        // if (mayor-up == 0100[4]) -> ins_size = from_int(6)
+        // if (mayor-up == 0101[5])-> ins_size = from_int(6)
+        // if (mayor-up == 0110)[6]-> ins_size = from_int(6)
+        // if (mayor-up == 0111[7]) -> ins_size = from_int(6)
+        // the four above structure: in 01xx
+        // hvis vi i teorien er ligeglade med hvad der står på første plads kan vi sige
+        // kan vi sige (mayor-up & 0100)
+        // ellers er det nok noget i retning af (not(mayor-up & 1000) && (mayor-up & 0100))
+
+
+        // if (mayor-up == 1010[10]) -> ins_size = from_int(6)
+        // if (mayor-up == 1011[11]) -> ins_size = from_int(6)
+
+        // if (mayor-up == 1001[9]) -> ins_size = from_int(3)
+        
+        
+
+
         // broad categorization of the instruction
         bool is_leaq = is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7;
         bool is_move = is_reg_movq || is_reg_movq_mem || is_imm_movq || is_imm_movq_mem;
