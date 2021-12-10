@@ -1,0 +1,19 @@
+0) Make 
+Bare den gode gamle. 
+
+1) Lav en prime fil eller skriv den selv
+
+	python3 gcc-online.py -S -Og -fno-optimize-sibling-calls -fcf-protection=none [filnavn på .c-program]
+ 
+	python3 primify.py
+
+2) Kompiler til hex med 
+
+	python3 prasm [filnavn på .s-program]
+
+3) Kør med prun
+	python3 prun.py [filnavn på .hex-program] [start-funktion]
+
+
+4) kør sim brug .trc for at få en tracefil
+	./sim [filnavn].hex [Startsted (f.eks main or start)] [filnavn].trc
