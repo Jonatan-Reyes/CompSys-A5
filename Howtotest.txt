@@ -5,11 +5,11 @@ Bare den gode gamle.
 
 	python3 gcc-online.py -S -Og -fno-optimize-sibling-calls -fcf-protection=none [filnavn på .c-program]
  
-	python3 primify.py
+	python3 primify.py []
 
 2) Kompiler til hex med 
 
-	python3 prasm [filnavn på .s-program]
+	python3 prasm.py [filnavn på .s-program]
 
 3) Kør med prun
 	python3 prun.py [filnavn på .hex-program] [start-funktion]
