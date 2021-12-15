@@ -123,49 +123,22 @@ int main(int argc, char* argv[]) {
 
         // Right now, we can only execute instructions with a size of 2.
         // TODO 2021:
-        // from info above determine the instruction size
-        //val ins_size = from_int(6); // = from_int(2); // skal jo så fjernes
-        // ins_size = 
-        // første fire bits -> bestemmer instruktion, hvoraf man kan udlede størrelsen
-        // bitwise &&
-        // use mayor-up
-        // if (mayor-up == 0000[0]) -> ins_size = from_int(2)
-        // if (mayor-up == 0001[1]) -> ins_size = from_int(2)
-        // if (mayor-up == 0010[2]) -> ins_size = from_int(2)
-        // if (mayor-up == 0011[3]) -> ins_size = from_int(2)
-        // the above structure: 00xx = 2
-        // if (mayor-up == 0100[4]) -> ins_size = from_int(6)
-        // if (mayor-up == 0101[5])-> ins_size = from_int(6)
-        // if (mayor-up == 0110)[6]-> ins_size = from_int(6)
-        // if (mayor-up == 0111[7]) -> ins_size = from_int(6)
-        // the four above structure: in 01xx = 6, tror altså at det er 5
-
-        // 00xx
-        //ins_size = use_if(reduce_or(neg(4,and(major_op, from_int (12)))), from_int(2));
+        // TODO DIDDLY DONE
         
-        // if (mayor-up == 1000[8]) -> ins_size = from_int(2)
-        // ins_size = use_if(is_leaq2,from_int(2));
-        
-        // if (mayor-up == 1001[9]) -> ins_size = from_int(3)
-        // ins_size = use_if(is_leaq3,from_int(3));
-
-        // val imm_p = or(use_if( !imm_p_pos6, imm_offset_2), use_if( imm_p_pos6, imm_offset_6));
-
+        // computes the first result corresponding to if the size should be 2 eg 00xx + ???
         val result1 = or(use_if(reduce_or(neg(4,and(major_op, from_int (12)))), from_int(2)),
             use_if(is_leaq2,from_int(2)));
+        // Sets size to 6 or 7 for respectively leq6 7
         val result2 = or(use_if(is_leaq6, from_int(6)), use_if(is_leaq7, from_int(7)));
+        // Sets size to 3 if leaq 3 and to 6 if arithmetic
         val result3 = or(use_if(is_imm_arithmetic, from_int(6)), use_if(is_leaq3,from_int(3)));
 
+        // chooses between result 1 or result 2
         val intermediate = or(result1, result2);
-        val ins_size = or(intermediate, result3);
-        //(not(mayor-up & 1000) && (mayor-up & 0100)) 
-        //ins_size = use_if(is_imm_arithmetic, from_int(6));
-        //use_if(reduce_or(and(neg(4, and(major_op, from_int(8))),and(major_op, from_int(4)))), from_int(6)); 
-        
-        // if (mayor-up == 1010[10]) -> ins_size = from_int(6) 
-        // if (mayor-up == 1011[11]) -> ins_size = from_int(7)
-        //ins_size = use_if(is_leaq6, from_int(6)); // potentielt forkerte værdier i vores from ints
-        //ins_size = use_if(is_leaq7, from_int(7)); //
+        // chooses between intermediate and if the size should be 6
+        val intermediate2 = or(use_if(reduce_or(and(neg(4, and(major_op, from_int(8))),and(major_op, from_int(4)))), from_int(6)), intermediate);
+        // computes the final result 
+        val ins_size = or(intermediate2, result3);
 
         // broad categorization of the instruction
         bool is_leaq = is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7;
@@ -189,6 +162,7 @@ int main(int argc, char* argv[]) {
         bool is_conditional = (is_cflow || is_imm_cbranch); // TODO 2021: Detect if we are executing a conditional flow change
 
         // TODO 2021: Add additional control signals you may need below....
+        // program counter
 
         // setting up operand fetch and register read and write for the datapath:
         bool use_imm = is_imm_movq | is_imm_arithmetic | is_imm_cbranch;
@@ -256,12 +230,21 @@ int main(int argc, char* argv[]) {
                          use_if(use_alu, alu_result)))));
 
         // address of succeeding instruction in memory
+        bool sa;
         val pc_incremented  = add(pc, ins_size);
 
         // determine the next position of the program counter
         // TODO 2021: Add any additional sources for the next PC (for call, ret, jmp and conditional branch)
-        val pc_next = pc_incremented;
 
+        // bool = true if increment 
+        bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH,minor_op));
+        // bool = true if return, er indbygget 
+        // bool = true if conditonal branch
+        // sæt statements sammen
+        val pc_next = pc_incremented;
+        val pc_next = or(use_if(is_return, reg_s), use_if(is_jump, pick_bits(0,32,inst_bytes[2])));
+
+        //val pc_next = use_if(no_jump,pc_incremented(or(use_if(is_return, reg_s), use_if(is_jump, pick_bits(0,32,inst_bytes[2])))));
         /*** MEMORY ***/
         // read from memory if needed
         val mem_out = memory_read(mem, agen_result, is_load);
@@ -270,6 +253,9 @@ int main(int argc, char* argv[]) {
         // choose result to write back to register
         // TODO 2021: Add any additional results which need to be muxed in for writing to the destination register
         bool use_compute_result = !is_load && (use_agen || use_multiplier || use_shifter || use_direct || use_alu);
+        // case: memory
+        // call -> hvad så?
+        // dæk alle cases
         val datapath_result = or(use_if(use_compute_result, compute_result),
                                  use_if(is_load, mem_out));
 
