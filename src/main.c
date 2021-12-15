@@ -124,8 +124,8 @@ int main(int argc, char* argv[]) {
         // Right now, we can only execute instructions with a size of 2.
         // TODO 2021:
         // from info above determine the instruction size
-        val ins_size = from_int(2); // skal jo så fjernes
-
+        //val ins_size = from_int(6); // = from_int(2); // skal jo så fjernes
+        // ins_size = 
         // første fire bits -> bestemmer instruktion, hvoraf man kan udlede størrelsen
         // bitwise &&
         // use mayor-up
@@ -141,19 +141,31 @@ int main(int argc, char* argv[]) {
         // the four above structure: in 01xx = 6, tror altså at det er 5
 
         // 00xx
-        ins_size = use_if(reduce_or(neg(4,and(major_op, from_int (12)))), from_int(2));
+        //ins_size = use_if(reduce_or(neg(4,and(major_op, from_int (12)))), from_int(2));
+        
         // if (mayor-up == 1000[8]) -> ins_size = from_int(2)
-        ins_size = use_if(is_leaq2,from_int(2));
-                // if (mayor-up == 1001[9]) -> ins_size = from_int(3)
-        ins_size = use_if(is_leaq3,from_int(3));
+        // ins_size = use_if(is_leaq2,from_int(2));
+        
+        // if (mayor-up == 1001[9]) -> ins_size = from_int(3)
+        // ins_size = use_if(is_leaq3,from_int(3));
+
+        // val imm_p = or(use_if( !imm_p_pos6, imm_offset_2), use_if( imm_p_pos6, imm_offset_6));
+
+        val result1 = or(use_if(reduce_or(neg(4,and(major_op, from_int (12)))), from_int(2)),
+            use_if(is_leaq2,from_int(2)));
+        val result2 = or(use_if(is_leaq6, from_int(6)), use_if(is_leaq7, from_int(7)));
+        val result3 = or(use_if(is_imm_arithmetic, from_int(6)), use_if(is_leaq3,from_int(3)));
+
+        val intermediate = or(result1, result2);
+        val ins_size = or(intermediate, result3);
         //(not(mayor-up & 1000) && (mayor-up & 0100)) 
-        ins_size = use_if(reduce_or(and(neg(4, and(major_op, from_int(8))),and(major_op, from_int(4)))), from_int(6)); /// ret sikker på at det skal være 5
+        //ins_size = use_if(is_imm_arithmetic, from_int(6));
+        //use_if(reduce_or(and(neg(4, and(major_op, from_int(8))),and(major_op, from_int(4)))), from_int(6)); 
+        
         // if (mayor-up == 1010[10]) -> ins_size = from_int(6) 
         // if (mayor-up == 1011[11]) -> ins_size = from_int(7)
-        ins_size = use_if(is_leaq6, from_int(6));
-        ins_size = use_if(is_leaq7, from_int(7));
-
-
+        //ins_size = use_if(is_leaq6, from_int(6)); // potentielt forkerte værdier i vores from ints
+        //ins_size = use_if(is_leaq7, from_int(7)); //
 
         // broad categorization of the instruction
         bool is_leaq = is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7;

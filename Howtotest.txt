@@ -9,7 +9,7 @@ Bare den gode gamle.
 
 2) Kompiler til hex med 
 
-	python3 prasm.py [filnavn på .s-program]
+	python3 prasm.py [filnavn på .prime-program]
 
 3) Kør med prun
 	python3 prun.py [filnavn på .hex-program] [start-funktion]

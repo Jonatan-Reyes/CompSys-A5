@@ -1,4 +1,4 @@
-                                        	#     .file	"81a87c85ecf950230a210580b3b8bc64.c"
+                                        	#     .file	"82f1e1632d1fc00a2b0a4fc4364db3e3.c"
                                         	#     .text
                                         	#     .globl	main
                                         	#     .type main, @function
@@ -6,3 +6,12 @@ main:                                   	# main:
 .LFB0:                                  	# .LFB0:                                  
     subq $8, %rsp                       	#
     movq %r11, (%rsp)                   	#     .cfi_startproc                      
+    movq $0, %eax                       	#     movq $0, %eax                       
+    movq (%rsp), %r11                   	#     ret                                 
+    addq $8, %rsp                       	#
+    ret %r11                            	#
+                                        	#     .cfi_endproc
+                                        	# .LFE0:
+                                        	#     .size	main, .-main
+                                        	#     .ident	"GCC: (Ubuntu 9.3.0-17ubuntu1~20.04) 9.3.0"
+                                        	#     .section	.note.GNU-stack,"",@progbits
