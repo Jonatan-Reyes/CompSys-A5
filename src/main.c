@@ -159,6 +159,7 @@ int main(int argc, char* argv[]) {
         bool is_load  = ((is_imm_movq_mem && is(0x5,minor_op))||(is_reg_movq_mem && is(0x1,minor_op)));          // TODO 2021: Detect when we're executing a load
         bool is_store = ((is_imm_movq_mem && is(0xd,minor_op))||(is_reg_movq_mem && is(0x9 ,minor_op)));          // TODO 2021: Detect when we're executing a store
         // hvis det control flow, eller branch, skal dette være positivt
+        // imm branch er rigtig, men is_cflow skal pares med compatible cccc nok ved at sige det modsatte minor up = (0010||0011|| 11xx)
         bool is_conditional = (is_cflow || is_imm_cbranch); // TODO 2021: Detect if we are executing a conditional flow change
 
         // TODO 2021: Add additional control signals you may need below....
@@ -238,13 +239,16 @@ int main(int argc, char* argv[]) {
 
         // bool = true if increment 
         bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH,minor_op));
+        bool true_Rconditional =  is_conditional && comparator(minor_op,reg_d, reg_s);
+        bool true_Iconditional =  is_conditional && comparator(minor_op,reg_d, pick_bits(0,32,inst_bytes[2]));
+        bool is_incriment = !(true_Rconditional || true_Iconditional);
         // bool = true if return, er indbygget 
-        // bool = true if conditonal branch
+        // bool = true if conditonal branch with registers and statement correct
+        // bool = true if conditional branch with $I and statement correct
         // sæt statements sammen
-        val pc_next = pc_incremented;
-        val pc_next = or(use_if(is_return, reg_s), use_if(is_jump, pick_bits(0,32,inst_bytes[2])));
-
-        //val pc_next = use_if(no_jump,pc_incremented(or(use_if(is_return, reg_s), use_if(is_jump, pick_bits(0,32,inst_bytes[2])))));
+        val pc_check1 = or(use_if(is_return, reg_s), use_if(is_jump, pick_bits(0,32,inst_bytes[2])));
+        val pc_check2 = or(use_if(true_Rconditional, pick_bits(0,32,inst_bytes[2])), use_if(true_Iconditional, pick_bits(0,32,inst_bytes[6])));
+        val pc_next = or(or(pc_check1, pc_check2),use_if(is_incriment, pc_incremented));
         /*** MEMORY ***/
         // read from memory if needed
         val mem_out = memory_read(mem, agen_result, is_load);
