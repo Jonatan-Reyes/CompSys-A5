@@ -5,7 +5,7 @@ Bare den gode gamle.
 
 	python3 gcc-online.py -S -Og -fno-optimize-sibling-calls -fcf-protection=none [filnavn på .c-program]
  
-	python3 primify.py []
+	python3 primify.py [.s-fil]
 
 2) Kompiler til hex med 
 
