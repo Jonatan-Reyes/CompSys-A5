@@ -238,17 +238,18 @@ int main(int argc, char* argv[]) {
         // TODO 2021: Add any additional sources for the next PC (for call, ret, jmp and conditional branch)
 
         // bool = true if increment 
-        bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH,minor_op));
-        bool true_Rconditional =  is_conditional && comparator(minor_op,reg_d, reg_s);
+        bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH, minor_op));
+        bool true_Rconditional =  is_conditional && comparator(minor_op,reg_d, reg_s); // tror is conditional er forkert
         bool true_Iconditional =  is_conditional && comparator(minor_op,reg_d, pick_bits(0,32,inst_bytes[2]));
-        bool is_incriment = !(true_Rconditional || true_Iconditional);
+        bool is_incriment = !(true_Rconditional || true_Iconditional || is_jump || is_return);
         // bool = true if return, er indbygget 
         // bool = true if conditonal branch with registers and statement correct
         // bool = true if conditional branch with $I and statement correct
         // sæt statements sammen
-        val pc_check1 = or(use_if(is_return, reg_s), use_if(is_jump, pick_bits(0,32,inst_bytes[2])));
+        val pc_check1 = use_if(is_jump, pick_bits(0,32,inst_bytes[2])); // skal ikke bruge return
         val pc_check2 = or(use_if(true_Rconditional, pick_bits(0,32,inst_bytes[2])), use_if(true_Iconditional, pick_bits(0,32,inst_bytes[6])));
         val pc_next = or(or(pc_check1, pc_check2),use_if(is_incriment, pc_incremented));
+        //printf("\n jump %d, incriment %d\n, return %d", is_jump, is_incriment, is_return);
         /*** MEMORY ***/
         // read from memory if needed
         val mem_out = memory_read(mem, agen_result, is_load);
