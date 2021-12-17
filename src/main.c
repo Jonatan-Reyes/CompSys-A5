@@ -159,8 +159,9 @@ int main(int argc, char* argv[]) {
         bool is_load  = ((is_imm_movq_mem && is(0x5,minor_op))||(is_reg_movq_mem && is(0x1,minor_op)));          // TODO 2021: Detect when we're executing a load
         bool is_store = ((is_imm_movq_mem && is(0xd,minor_op))||(is_reg_movq_mem && is(0x9 ,minor_op)));          // TODO 2021: Detect when we're executing a store
         // hvis det control flow, eller branch, skal dette være positivt
-        // imm branch er rigtig, men is_cflow skal pares med compatible cccc nok ved at sige det modsatte minor up = (0010||0011|| 11xx)
+        // Checker om minor_op er en af de reserverede værdier : (0010||0011||11xx)
         bool not_reserved = !(reduce_and(4,and(from_int(3), minor_op)) || is(0x3, minor_op) || is(0x2, minor_op));
+        // ser om hvorvidt det er register eller immediate conditional, den miderste kan i toerien fjernes
         bool is_conditional = ((is_cflow && not_reserved) || is_imm_cbranch); // TODO 2021: Detect if we are executing a conditional flow change
         bool is_Iconditional = is_imm_cbranch;
         bool is_Rconditional = (is_cflow && not_reserved);
@@ -238,15 +239,15 @@ int main(int argc, char* argv[]) {
         // determine the next position of the program counter
         // TODO 2021: Add any additional sources for the next PC (for call, ret, jmp and conditional branch)
 
-        // bool = true if increment 
+        // ser hvorvidt pc skal inkrementeres normalt, eller skal hoppe, checker hvor vi conditionals er sande
+        //jump
         bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH, minor_op));
+        // register conditional
         bool true_Rconditional = is_Rconditional && comparator(minor_op,reg_d, reg_s);
+        // intermediate conditional
         bool true_Iconditional = is_Iconditional && comparator(minor_op,reg_d, pick_bits(0,32,inst_bytes[2]));
         bool is_incriment = !(true_Rconditional || true_Iconditional || is_jump || is_return);
-        // bool = true if return, er indbygget 
-        // bool = true if conditonal branch with registers and statement correct
-        // bool = true if conditional branch with $I and statement correct
-        // sæt statements sammen
+        // sætter statements sammen
         val pc_check1 = use_if(is_jump, pick_bits(0,32,inst_bytes[2]));
         val pc_check2 = or(use_if(true_Rconditional, pick_bits(0,32,inst_bytes[2])), use_if(true_Iconditional, pick_bits(0,32,inst_bytes[6])));
         val pc_next = or(or(pc_check1, pc_check2),use_if(is_incriment, pc_incremented));
