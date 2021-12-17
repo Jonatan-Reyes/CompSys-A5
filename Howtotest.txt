@@ -1,19 +1,10 @@
-0) Make 
-Bare den gode gamle. 
+Måden vi testede enkelte filer på før kan stadig gøres, men der er nu en automatiseret måde at gøre det på.
 
-1) Lav en prime fil eller skriv den selv
-
-	python3 gcc-online.py -S -Og -fno-optimize-sibling-calls -fcf-protection=none [filnavn på .c-program]
- 
-	python3 primify.py [.s-fil]
-
-2) Kompiler til hex med 
-
-	python3 prasm.py [filnavn på .prime-program]
-
-3) Kør med prun
-	python3 prun.py [filnavn på .hex-program] [start-funktion]
-
-
-4) kør sim brug .trc for at få en tracefil
-	./sim [filnavn].hex [Startsted (f.eks main or start)] [filnavn].trc
+0) installer (i CompSys-A5 mappen) 
+	chmod u+x *.py
+	sudo bash install.sh (ved ikke om sudo og bash er anderledes på mac)
+	
+1) Gå ind i src for at køre tests 
+ 	bash test.sh
+ 	
+ 2) For at tilføje testfiler, skal man blor tilføje en .prime fil i /test-mappen, men startpunktet (det der hedder main på de fleste) skal hede test, og skal være første linje, som der ikke er udkommenteret
