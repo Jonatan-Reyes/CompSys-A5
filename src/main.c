@@ -160,8 +160,10 @@ int main(int argc, char* argv[]) {
         bool is_store = ((is_imm_movq_mem && is(0xd,minor_op))||(is_reg_movq_mem && is(0x9 ,minor_op)));          // TODO 2021: Detect when we're executing a store
         // hvis det control flow, eller branch, skal dette være positivt
         // imm branch er rigtig, men is_cflow skal pares med compatible cccc nok ved at sige det modsatte minor up = (0010||0011|| 11xx)
-        bool is_conditional = (is_cflow || is_imm_cbranch); // TODO 2021: Detect if we are executing a conditional flow change
-
+        bool not_reserved = !(reduce_and(4,and(from_int(3), minor_op)) || is(0x3, minor_op) || is(0x2, minor_op));
+        bool is_conditional = ((is_cflow && not_reserved) || is_imm_cbranch); // TODO 2021: Detect if we are executing a conditional flow change
+        bool is_Iconditional = is_imm_cbranch;
+        bool is_Rconditional = (is_cflow && not_reserved);
         // TODO 2021: Add additional control signals you may need below....
         // program counter
 
@@ -187,7 +189,6 @@ int main(int argc, char* argv[]) {
         bool use_d = (is(1,pick_bits(2,1,minor_op)) && use_agen) || is_imm_arithmetic || is_imm_cbranch;
         // - control for the ALU (too easy)
         val alu_ctrl = minor_op;
-
         // - control for the multiplier
         bool mul_is_signed = is(IMUL, minor_op);
 
@@ -229,7 +230,7 @@ int main(int argc, char* argv[]) {
                        or(use_if(use_shifter, shifter_result),
                           or(use_if(use_direct, op_b),
                          use_if(use_alu, alu_result)))));
-
+        //printf("result,%lx\n", compute_result);
         // address of succeeding instruction in memory
         bool sa;
         val pc_incremented  = add(pc, ins_size);
@@ -239,16 +240,18 @@ int main(int argc, char* argv[]) {
 
         // bool = true if increment 
         bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH, minor_op));
-        bool true_Rconditional =  is_conditional && comparator(minor_op,reg_d, reg_s); // tror is conditional er forkert
-        bool true_Iconditional =  is_conditional && comparator(minor_op,reg_d, pick_bits(0,32,inst_bytes[2]));
+        bool true_Rconditional = is_Rconditional && comparator(minor_op,reg_d, reg_s);
+        bool true_Iconditional = is_Iconditional && comparator(minor_op,reg_d, pick_bits(0,32,inst_bytes[2]));
         bool is_incriment = !(true_Rconditional || true_Iconditional || is_jump || is_return);
         // bool = true if return, er indbygget 
         // bool = true if conditonal branch with registers and statement correct
         // bool = true if conditional branch with $I and statement correct
         // sæt statements sammen
-        val pc_check1 = use_if(is_jump, pick_bits(0,32,inst_bytes[2])); // skal ikke bruge return
+        val pc_check1 = use_if(is_jump, pick_bits(0,32,inst_bytes[2]));
         val pc_check2 = or(use_if(true_Rconditional, pick_bits(0,32,inst_bytes[2])), use_if(true_Iconditional, pick_bits(0,32,inst_bytes[6])));
         val pc_next = or(or(pc_check1, pc_check2),use_if(is_incriment, pc_incremented));
+        //printf("Iconditional : %lx ,%lx\n", reg_d.val ,pick_bits(0,32,inst_bytes[6]).val);
+        //printf("Iconditional : %d ,%lx\n", true_Iconditional ,pick_bits(0,32,inst_bytes[6]).val);
         //printf("\n jump %d, incriment %d\n, return %d", is_jump, is_incriment, is_return);
         /*** MEMORY ***/
         // read from memory if needed
@@ -265,6 +268,7 @@ int main(int argc, char* argv[]) {
                                  use_if(is_load, mem_out));
 
         // write to register if needed
+        //printf("result,%lx, is true?: %d\n", datapath_result.val , use_compute_result);
         reg_write(regs, reg_d, datapath_result, reg_wr_enable);
 
         // write to memory if needed
