@@ -120,25 +120,30 @@ int main(int argc, char* argv[]) {
         bool is_leaq6  = is(LEAQ6, major_op);
         bool is_leaq7  = is(LEAQ7, major_op);
         bool is_imm_cbranch = is(IMM_CBRANCH, major_op);
+        //printf ("\n%lx\n",reg_d);
 
         // Right now, we can only execute instructions with a size of 2.
         // TODO 2021:
         // TODO DIDDLY DONE
         
         // computes the first result corresponding to if the size should be 2 eg 00xx + ???
-        val result1 = or(use_if(reduce_or(neg(4,and(major_op, from_int (12)))), from_int(2)),
+        val result1 = or(use_if(reduce_and(4, neg(4,and(major_op, from_int(12)))), from_int(2)),
             use_if(is_leaq2,from_int(2)));
         // Sets size to 6 or 7 for respectively leq6 7
         val result2 = or(use_if(is_leaq6, from_int(6)), use_if(is_leaq7, from_int(7)));
         // Sets size to 3 if leaq 3 and to 6 if arithmetic
         val result3 = or(use_if(is_imm_arithmetic, from_int(6)), use_if(is_leaq3,from_int(3)));
-
-        // chooses between result 1 or result 2
-        val intermediate = or(result1, result2);
+        // imm branch 
+        val result4 = (use_if(is_imm_cbranch, from_int(10)));
+        // chooses between result 1 or result 2 result4
+        val intermediate = or(or(result1, result2),result3);
         // chooses between intermediate and if the size should be 6
-        val intermediate2 = or(use_if(reduce_or(and(neg(4, and(major_op, from_int(8))),and(major_op, from_int(4)))), from_int(6)), intermediate);
+       // val intermediate2 = or(use_if(reduce_or(and(neg(4, and(major_op, from_int(8))),and(major_op, from_int(4)))), from_int(6)), intermediate);
+       val intermediate2 = or(use_if(!(pick_one(1, major_op)) && pick_one(2, major_op), from_int(6)), intermediate);
         // computes the final result 
-        val ins_size = or(intermediate2, result3);
+        val ins_size = or(intermediate2, result4);
+        printf("%lx %lx %lx %lx %lx %lx \n", result1.val, result2.val, result3.val, result4.val, intermediate, intermediate2);
+        printf("after assignment inter:%lx, result 4:%lx\n", intermediate.val, result4);
 
         // broad categorization of the instruction
         bool is_leaq = is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7;
@@ -162,11 +167,13 @@ int main(int argc, char* argv[]) {
         // Checker om minor_op er en af de reserverede værdier : (0010||0011||11xx)
         bool not_reserved = !(reduce_and(4,and(from_int(3), minor_op)) || is(0x3, minor_op) || is(0x2, minor_op));
         // ser om hvorvidt det er register eller immediate conditional, den miderste kan i toerien fjernes
-        bool is_conditional = ((is_cflow && not_reserved) || is_imm_cbranch); // TODO 2021: Detect if we are executing a conditional flow change
+        bool is_conditional = ((is_cflow && not_reserved) || is_imm_cbranch); 
+        // TODO 2021: Detect if we are executing a conditional flow change
         bool is_Iconditional = is_imm_cbranch;
         bool is_Rconditional = (is_cflow && not_reserved);
         // TODO 2021: Add additional control signals you may need below....
         // program counter
+    
 
         // setting up operand fetch and register read and write for the datapath:
         bool use_imm = is_imm_movq | is_imm_arithmetic | is_imm_cbranch;
@@ -234,7 +241,9 @@ int main(int argc, char* argv[]) {
         //printf("result,%lx\n", compute_result);
         // address of succeeding instruction in memory
         bool sa;
+        printf("Before incirement, pc: %lx, ins_size: %lx\n", pc, ins_size.val);
         val pc_incremented  = add(pc, ins_size);
+        printf("after incrimented%lx\n", pc_incremented.val);
 
         // determine the next position of the program counter
         // TODO 2021: Add any additional sources for the next PC (for call, ret, jmp and conditional branch)
@@ -243,16 +252,18 @@ int main(int argc, char* argv[]) {
         //jump
         bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH, minor_op));
         // register conditional
-        bool true_Rconditional = is_Rconditional && comparator(minor_op,reg_d, reg_s);
+        bool true_Rconditional = is_Rconditional && comparator(minor_op,reg_read(regs, reg_d),reg_read(regs, reg_s));
         // intermediate conditional
-        bool true_Iconditional = is_Iconditional && comparator(minor_op,reg_d, pick_bits(0,32,inst_bytes[2]));
+        bool true_Iconditional = is_Iconditional && comparator(minor_op,reg_read(regs, reg_d),  pick_bits(0,32,inst_bytes[2]));
         bool is_incriment = !(true_Rconditional || true_Iconditional || is_jump || is_return);
         // sætter statements sammen
         val pc_check1 = use_if(is_jump, pick_bits(0,32,inst_bytes[2]));
         val pc_check2 = or(use_if(true_Rconditional, pick_bits(0,32,inst_bytes[2])), use_if(true_Iconditional, pick_bits(0,32,inst_bytes[6])));
+        //printf("det den burde hoppe hen til %lx\n", (pick_bits(0,32,inst_bytes[6])).val);
         val pc_next = or(or(pc_check1, pc_check2),use_if(is_incriment, pc_incremented));
-        //printf("Iconditional : %lx ,%lx\n", reg_d.val ,pick_bits(0,32,inst_bytes[6]).val);
-        //printf("Iconditional : %d ,%lx\n", true_Iconditional ,pick_bits(0,32,inst_bytes[6]).val);
+        printf("det den hopper hen til %lx\n", pc_next.val);
+        //printf("Iconditional : %lx ,%lx\n", reg_read(regs, reg_d),pick_bits(0,32,inst_bytes[6]));
+        //printf("Iconditional : %d ,%lx\n", true_Iconditional ,minor_op.val);
         //printf("\n jump %d, incriment %d\n, return %d", is_jump, is_incriment, is_return);
         /*** MEMORY ***/
         // read from memory if needed
