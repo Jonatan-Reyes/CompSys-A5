@@ -120,41 +120,16 @@ int main(int argc, char* argv[]) {
         bool is_leaq6  = is(LEAQ6, major_op);
         bool is_leaq7  = is(LEAQ7, major_op);
         bool is_imm_cbranch = is(IMM_CBRANCH, major_op);
-        //printf ("\n%lx\n",reg_d);
-
-
-
-
+        
+        // determines the size of the instruction, based on the opcode of the command 
         val two_test = use_if(is_return_or_stop || is_reg_movq || is_reg_movq_mem || is_reg_arithmetic || is_leaq2, from_int(2));
         val three_test = use_if(is_leaq3, from_int(3));
         val six_test = use_if (is_cflow || is_imm_arithmetic|| is_imm_movq || is_leaq6, from_int(6));
         val seven_test = use_if (is_leaq7, from_int(7));
         val ten_test = use_if(is_imm_cbranch, from_int(10));
+        // instruction size is the only non-zero value left
         val ins_size = or(or(or(two_test, three_test),or(six_test, seven_test)),ten_test);
 
-        // Right now, we can only execute instructions with a size of 2.
-        // TODO 2021:
-        // TODO DIDDLY DONE
-        /*
-        // computes the first result corresponding to if the size should be 2 eg 00xx + ???
-        val result1 = or(use_if(reduce_and(4, neg(4,and(major_op, from_int(12)))), from_int(2)),
-            use_if(is_leaq2,from_int(2)));
-        // Sets size to 6 or 7 for respectively leq6 7
-        val result2 = or(use_if(is_leaq6, from_int(6)), use_if(is_leaq7, from_int(7)));
-        // Sets size to 3 if leaq 3 and to 6 if arithmetic
-        val result3 = or(use_if(is_imm_arithmetic, from_int(6)), use_if(is_leaq3,from_int(3)));
-        // imm branch 
-        val result4 = (use_if(is_imm_cbranch, from_int(10)));
-        // chooses between result 1 or result 2 result4
-        val intermediate = or(or(result1, result2),result3);
-        // chooses between intermediate and if the size should be 6
-       // val intermediate2 = or(use_if(reduce_or(and(neg(4, and(major_op, from_int(8))),and(major_op, from_int(4)))), from_int(6)), intermediate);
-       val intermediate2 = or(use_if(!(pick_one(1, major_op)) && pick_one(2, major_op), from_int(6)), intermediate);
-        // computes the final result 
-        val ins_size = or(intermediate2, result4);
-        printf("%lx %lx %lx %lx %lx %lx \n", result1.val, result2.val, result3.val, result4.val, intermediate, intermediate2);
-        printf("after assignment inter:%lx, result 4:%lx\n", intermediate.val, result4);
-        */
         // broad categorization of the instruction
         bool is_leaq = is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7;
         bool is_move = is_reg_movq || is_reg_movq_mem || is_imm_movq || is_imm_movq_mem;
@@ -167,23 +142,17 @@ int main(int argc, char* argv[]) {
         bool imm_i_pos3 = is_leaq7;  /* all other at position 2 */
         bool imm_p_pos6 = is_imm_cbranch; /* all other at position 2 */
 
-        // unimplemented control signals:
-        //Hvis den er enten load, eller store, så er major op = 0011 for register, eller 0111 for int
-        //Hvis minor upcode er 1001 så er det store, og 0001 for load, for reg,
-        //Hvis minor upcode er 1101 så er det store, og 0101 for load, for int,
-        bool is_load  = ((is_imm_movq_mem && is(0x5,minor_op))||(is_reg_movq_mem && is(0x1,minor_op)));          // TODO 2021: Detect when we're executing a load
-        bool is_store = ((is_imm_movq_mem && is(0xd,minor_op))||(is_reg_movq_mem && is(0x9 ,minor_op)));          // TODO 2021: Detect when we're executing a store
-        // hvis det control flow, eller branch, skal dette være positivt
-        // Checker om minor_op er en af de reserverede værdier : (0010||0011||11xx)
+        // for both load, and store, major opcode must be 0011 for register, or 0111 for intermediate values
+        // for register load/store minor opcode 1001 is store, while 0001 is load
+        // for intermediate load/store minor opcode 1101 is store, while 0101 is load
+        bool is_load  = ((is_imm_movq_mem && is(0x5,minor_op))||(is_reg_movq_mem && is(0x1,minor_op))); // TODO 2021: Detect when we're executing a load
+        bool is_store = ((is_imm_movq_mem && is(0xd,minor_op))||(is_reg_movq_mem && is(0x9 ,minor_op))); // TODO 2021: Detect when we're executing a store
+        // checks wether opcodes for other operations are being used : (0010||0011||11xx)
         bool not_reserved = !(reduce_and(4,and(from_int(3), minor_op)) || is(0x3, minor_op) || is(0x2, minor_op));
-        // ser om hvorvidt det er register eller immediate conditional, den miderste kan i toerien fjernes
+        // Checks which kind of control flow is being used
         bool is_conditional = ((is_cflow && not_reserved) || is_imm_cbranch); 
-        // TODO 2021: Detect if we are executing a conditional flow change
         bool is_Iconditional = is_imm_cbranch;
         bool is_Rconditional = (is_cflow && not_reserved);
-        // TODO 2021: Add additional control signals you may need below....
-        // program counter
-    
 
         // setting up operand fetch and register read and write for the datapath:
         bool use_imm = is_imm_movq | is_imm_arithmetic | is_imm_cbranch;
@@ -247,18 +216,12 @@ int main(int argc, char* argv[]) {
                     or(use_if(use_multiplier, mul_result),
                        or(use_if(use_shifter, shifter_result),
                           or(use_if(use_direct, op_b),
-                         use_if(use_alu, alu_result)))));
-        //printf("result,%lx\n", compute_result);
+                         use_if(use_alu, alu_result)))));                                                                   
         // address of succeeding instruction in memory
         bool sa;
-        printf("Before incirement, pc: %lx, ins_size: %lx\n", pc, ins_size.val);
         val pc_incremented  = add(pc, ins_size);
-        printf("after incrimented%lx\n", pc_incremented.val);
 
         // determine the next position of the program counter
-        // TODO 2021: Add any additional sources for the next PC (for call, ret, jmp and conditional branch)
-
-        // ser hvorvidt pc skal inkrementeres normalt, eller skal hoppe, checker hvor vi conditionals er sande
         //jump
         bool is_jump = (is(CFLOW, major_op) && is(IMM_CBRANCH, minor_op));
         // register conditional
@@ -266,15 +229,10 @@ int main(int argc, char* argv[]) {
         // intermediate conditional
         bool true_Iconditional = is_Iconditional && comparator(minor_op,reg_read(regs, reg_d),  pick_bits(0,32,inst_bytes[2]));
         bool is_incriment = !(true_Rconditional || true_Iconditional || is_jump || is_return);
-        // sætter statements sammen
+        // Applies the values for the operations that return true
         val pc_check1 = use_if(is_jump, pick_bits(0,32,inst_bytes[2]));
         val pc_check2 = or(use_if(true_Rconditional, pick_bits(0,32,inst_bytes[2])), use_if(true_Iconditional, pick_bits(0,32,inst_bytes[6])));
-        //printf("det den burde hoppe hen til %lx\n", (pick_bits(0,32,inst_bytes[6])).val);
         val pc_next = or(or(pc_check1, pc_check2),use_if(is_incriment, pc_incremented));
-        printf("det den hopper hen til %lx\n", pc_next.val);
-        //printf("Iconditional : %lx ,%lx\n", reg_read(regs, reg_d),pick_bits(0,32,inst_bytes[6]));
-        //printf("Iconditional : %d ,%lx\n", true_Iconditional ,minor_op.val);
-        //printf("\n jump %d, incriment %d\n, return %d", is_jump, is_incriment, is_return);
         /*** MEMORY ***/
         // read from memory if needed
         val mem_out = memory_read(mem, agen_result, is_load);
@@ -290,7 +248,6 @@ int main(int argc, char* argv[]) {
                                  use_if(is_load, mem_out));
 
         // write to register if needed
-        //printf("result,%lx, is true?: %d\n", datapath_result.val , use_compute_result);
         reg_write(regs, reg_d, datapath_result, reg_wr_enable);
 
         // write to memory if needed
