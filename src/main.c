@@ -122,10 +122,20 @@ int main(int argc, char* argv[]) {
         bool is_imm_cbranch = is(IMM_CBRANCH, major_op);
         //printf ("\n%lx\n",reg_d);
 
+
+
+
+        val two_test = use_if(is_return_or_stop || is_reg_movq || is_reg_movq_mem || is_reg_arithmetic || is_leaq2, from_int(2));
+        val three_test = use_if(is_leaq3, from_int(3));
+        val six_test = use_if (is_cflow || is_imm_arithmetic|| is_imm_movq || is_leaq6, from_int(6));
+        val seven_test = use_if (is_leaq7, from_int(7));
+        val ten_test = use_if(is_imm_cbranch, from_int(10));
+        val ins_size = or(or(or(two_test, three_test),or(six_test, seven_test)),ten_test);
+
         // Right now, we can only execute instructions with a size of 2.
         // TODO 2021:
         // TODO DIDDLY DONE
-        
+        /*
         // computes the first result corresponding to if the size should be 2 eg 00xx + ???
         val result1 = or(use_if(reduce_and(4, neg(4,and(major_op, from_int(12)))), from_int(2)),
             use_if(is_leaq2,from_int(2)));
@@ -144,7 +154,7 @@ int main(int argc, char* argv[]) {
         val ins_size = or(intermediate2, result4);
         printf("%lx %lx %lx %lx %lx %lx \n", result1.val, result2.val, result3.val, result4.val, intermediate, intermediate2);
         printf("after assignment inter:%lx, result 4:%lx\n", intermediate.val, result4);
-
+        */
         // broad categorization of the instruction
         bool is_leaq = is_leaq2 || is_leaq3 || is_leaq6 || is_leaq7;
         bool is_move = is_reg_movq || is_reg_movq_mem || is_imm_movq || is_imm_movq_mem;
