@@ -149,10 +149,10 @@ int main(int argc, char* argv[]) {
         bool is_store = ((is_imm_movq_mem && is(0xd,minor_op))||(is_reg_movq_mem && is(0x9 ,minor_op))); // TODO 2021: Detect when we're executing a store
         // checks wether opcodes for other operations are being used : (0010||0011||11xx)
         bool not_reserved = !(reduce_and(4,and(from_int(3), minor_op)) || is(0x3, minor_op) || is(0x2, minor_op));
-        // Checks which kind of control flow is being used
-        bool is_conditional = ((is_cflow && not_reserved) || is_imm_cbranch); 
+        // Checks which kind of control flow is being used 
         bool is_Iconditional = is_imm_cbranch;
         bool is_Rconditional = (is_cflow && not_reserved);
+        bool is_conditional = (is_Iconditional || is_Rconditional);
 
         // setting up operand fetch and register read and write for the datapath:
         bool use_imm = is_imm_movq | is_imm_arithmetic | is_imm_cbranch;
@@ -240,12 +240,12 @@ int main(int argc, char* argv[]) {
         /*** WRITE ***/
         // choose result to write back to register
         // TODO 2021: Add any additional results which need to be muxed in for writing to the destination register
-        bool use_compute_result = !is_load && (use_agen || use_multiplier || use_shifter || use_direct || use_alu);
+        bool use_compute_result = !is_call && !is_load && (use_agen || use_multiplier || use_shifter || use_direct || use_alu);
         // case: memory
         // call -> hvad så?
         // dæk alle cases
-        val datapath_result = or(use_if(use_compute_result, compute_result),
-                                 use_if(is_load, mem_out));
+        val datapath_result = or(or(use_if(use_compute_result, compute_result),
+                                 use_if(is_load, mem_out)),use_if(is_call, pc_incremented));
 
         // write to register if needed
         reg_write(regs, reg_d, datapath_result, reg_wr_enable);
