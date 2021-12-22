@@ -218,7 +218,6 @@ int main(int argc, char* argv[]) {
                           or(use_if(use_direct, op_b),
                          use_if(use_alu, alu_result)))));                                                                   
         // address of succeeding instruction in memory
-        bool sa;
         val pc_incremented  = add(pc, ins_size);
 
         // determine the next position of the program counter

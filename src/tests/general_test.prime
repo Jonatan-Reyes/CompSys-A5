@@ -1,0 +1,18 @@
+test:                                   	                                   
+.LFB0:                                  	                                   
+    addq $1, %eax                       	        
+    movq (%eax), %r9
+    movq $5, %r10
+    addq %r9, %r10 	
+    movq %r10, (%eax)            
+.L2:                                                             
+    addq $8, %rsp                       	
+    leaq (%eax), %r10
+    leaq (,%r10,8),%r9
+    leaq (%r9,%r10,2), %r9
+    leaq 3, %r9
+    leaq 4(%r9), %r14
+    leaq 6(,%r10,4),%rsi
+    leaq 6(%r9,%r10,4),%rsi
+    stop                	
+    jmp .L2
